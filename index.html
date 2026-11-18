@@ -49,6 +49,7 @@ input[type=color]{padding:0;width:36px;height:30px;flex:none}
 .ttl{font-size:13px;color:var(--mut);margin:0 4px 4px}.fg{cursor:pointer;text-decoration:underline dotted}.mt{cursor:pointer;border-left:3px solid var(--ac);padding-left:3px;color:var(--fg)}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:#222;color:#fff;padding:8px 12px;border-radius:8px;display:none;z-index:30;font-size:13px}
 </style></head><body><div id="app"></div><div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
 var MIN='2026-11-01',MAX='2030-12-31',ST=['Pendente','Em andamento','Feito','Aprovado'],SY=['⏳','🔧','✅','🌟'],WD=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -101,7 +102,7 @@ else if(v=='w'){body=h('div',{class:'grid g7 big'});for(i=0;i<7;i++)body.append(
 else body=h('div',{class:'grid g1 big'},cell(cur,true));
 var F=function(x){return fmt(x,{day:'numeric',month:'short'})},sb=selA?h('div',{class:'bar sb'},h('span',{},'📌 '+(selA===selB?F(selA):F(selA)+' até '+F(selB))),h('button',{onclick:function(){openCard(null)}},'➕ Criar card'),h('button',{onclick:newFolga},'🏖️ Criar folga'),h('button',{onclick:newMeet},'🤝 Criar reunião'),selA===selB?h('button',{onclick:function(){v='d';cur=selA;render()}},'👀 Ver dia'):'',h('button',{onclick:function(){selA=selB=null;render()}},'✕')):'';
 var nt=!loaded?note:(!cfg.people.length?(adm?'Comece em ⚙ Config: cadastre pessoas, atividades e clientes.':'O calendário ainda está vazio.'):'');
-app.replaceChildren(h('div',{class:'ttl'},'✨ Calendário de Produções ✨'),bar,seg,lg,sb,body,nt?h('p',{class:'note'},nt):'')}
+app.replaceChildren(h('div',{class:'ttl'},'✨ Calendário de Produções ✨ · Compartilhado'),bar,seg,lg,sb,body,nt?h('p',{class:'note'},nt):'')}
 function newFolga(){var a=selA||cur,z=selB||cur,b=h('div'),o,mS=h('input',{type:'text',placeholder:'Motivo (ex.: Recesso, Férias)'}),pS=sel([['','Equipe toda']].concat(cfg.people.map(function(p){return [p.id,p.name]})),''),d1=h('input',{type:'date',min:MIN,max:MAX,value:a}),d2=h('input',{type:'date',min:MIN,max:MAX,value:z});
 b.append(lbl('Motivo'),mS,lbl('Quem'),pS,lbl('De'),d1,lbl('Até'),d2);
 o=ov('🏖️ Nova folga',b,[btn('Cancelar',function(){o.remove()}),btn('Salvar',function(){var x=d1.value,y=d2.value;if(!x||!y||y<x||x<MIN||y>MAX){toast('Confira as datas (entre nov/2026 e dez/2030).');return}var days=(cfg.days||[]).slice();for(;x<=y;x=add(x,1))days.push({id:Math.random().toString(36).slice(2,8),date:x,label:mS.value.trim()||'Folga',pid:pS.value});db.doc('config/main').set(Object.assign({},cfg,{days:days})).then(function(){selA=selB=null;o.remove();render()}).catch(err)})])}
@@ -146,16 +147,65 @@ sec('Pessoas (cor do card)',c.people,function(){return {id:uid(),name:'',color:'
 sec('Atividades (cor do contorno)',c.acts,function(){return {id:uid(),name:'',pid:(c.people[0]||{}).id||'',color:'#e63946'}},function(x){return [tx(x,'emoji','😀','em'),tx(x,'name','Atividade'),ps(x),co(x),rm(c.acts,x)]});
 sec('Clientes',c.clients,function(){return {id:uid(),name:''}},function(x){return [tx(x,'name','Cliente'),rm(c.clients,x)]});}
 draw();o=ov('Configurações',b,[btn('Cancelar',function(){o.remove()}),btn('Salvar',function(){db.doc('config/main').set(c).then(function(){o.remove()}).catch(err)})])}
-var K='calendario-producoes-v1',store={};try{store=JSON.parse(localStorage.getItem(K))||{}}catch(e){}
+var store={};
 var CL=['VOX','Magafilio','Orquídea Modas','ACDC','Bogoni','Camatti','Castor Tem','Comach','Do Ré Mi Fraldas','Formatto','JBB Tacos','Móveis OpenUp','Remax','BeBlast','Natufit','Ferro e Pedra','Discpar'].map(function(n,i){return {id:'c'+(i+1),name:n}});
-if(!store['config/main'])store['config/main']={people:[{id:'alana',name:'Alana',color:'#f59e9e'},{id:'laura',name:'Laura',color:'#8ecae6'},{id:'jaque',name:'Jaque',color:'#b8e0a0'}],acts:[{id:'a1',name:'Banners',pid:'alana',color:'#e63946'},{id:'a2',name:'Criativos de Anúncios',pid:'alana',color:'#f77f00'},{id:'a3',name:'Repaginação',pid:'alana',color:'#7b2cbf'},{id:'a4',name:'Posts para Redes Sociais',pid:'alana',color:'#007f5f'},{id:'l1',name:'Pautas de Ações',pid:'laura',color:'#1d3557'},{id:'l2',name:'Programação de Posts',pid:'laura',color:'#d00070'},{id:'l3',name:'Emails Marketing',pid:'laura',color:'#6a4c93'},{id:'j1',name:'Aprovação de Pautas',pid:'jaque',color:'#0077b6'},{id:'j2',name:'Aprovação de Artes',pid:'jaque',color:'#b08900'},{id:'j3',name:'Programação de Banners',pid:'jaque',color:'#3a3a3a'}],clients:CL.slice(),days:[]};
-if(!(store['config/main'].clients||[]).length)store['config/main'].clients=CL.slice();
-var EM={a1:'🖼️',a2:'🎯',a3:'✨',a4:'📱',l1:'📝',l2:'🗓️',l3:'💌',j1:'👍',j2:'🎨',j3:'⏰'};store['config/main'].acts.forEach(function(a){if(a.emoji===undefined&&EM[a.id])a.emoji=EM[a.id]});
+store['config/main']={people:[{id:'alana',name:'Alana',color:'#f59e9e'},{id:'laura',name:'Laura',color:'#8ecae6'},{id:'jaque',name:'Jaque',color:'#b8e0a0'}],acts:[{id:'a1',name:'Banners',pid:'alana',color:'#e63946'},{id:'a2',name:'Criativos de Anúncios',pid:'alana',color:'#f77f00'},{id:'a3',name:'Repaginação',pid:'alana',color:'#7b2cbf'},{id:'a4',name:'Posts para Redes Sociais',pid:'alana',color:'#007f5f'},{id:'l1',name:'Pautas de Ações',pid:'laura',color:'#1d3557'},{id:'l2',name:'Programação de Posts',pid:'laura',color:'#d00070'},{id:'l3',name:'Emails Marketing',pid:'laura',color:'#6a4c93'},{id:'j1',name:'Aprovação de Pautas',pid:'jaque',color:'#0077b6'},{id:'j2',name:'Aprovação de Artes',pid:'jaque',color:'#b08900'},{id:'j3',name:'Programação de Banners',pid:'jaque',color:'#3a3a3a'}],clients:CL.slice(),days:[]};
+var EM={a1:'🖼️',a2:'🎯',a3:'✨',a4:'📱',l1:'📝',l2:'🗓️',l3:'💌',j1:'👍',j2:'🎨',j3:'⏰'};
+store['config/main'].acts.forEach(function(a){if(a.emoji===undefined&&EM[a.id])a.emoji=EM[a.id]});
 function sync(){cfg=Object.assign({people:[],acts:[],clients:[],days:[]},store['config/main']||{});cards={};st={};for(var p in store){var q=p.split('/');if(q[0]=='cards')cards[q[1]]=store[p];if(q[0]=='state')st[q[1]]=store[p]}}
-function persist(){try{localStorage.setItem(K,JSON.stringify(store))}catch(e){toast('Não foi possível salvar neste navegador.')}sync();render()}
-db={doc:function(p){return{set:function(d){store[p]=d;persist();return Promise.resolve()},delete:function(){delete store[p];persist();return Promise.resolve()}}},collection:function(){return{doc:function(){return{id:Math.random().toString(36).slice(2,10)}}}}};
+var SUPABASE_URL='https://gruhneyxqoxdhvbndoql.supabase.co';
+var SUPABASE_KEY='sb_publishable_ZQyE6Tu_1wNnLVSr91sbww_ZVAjBZu0';
+var sbClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+function tablePath(path){var q=path.split('/');return q[0]==='config'?{table:'calendar_config',id:q[1]}:q[0]==='cards'?{table:'calendar_cards',id:q[1]}:{table:'calendar_states',id:q[1]}}
+function setLocal(path,data){store[path]=data;sync();render()}
+function deleteLocal(path){delete store[path];sync();render()}
+db={
+ doc:function(path){return{
+  set:async function(data){
+   var x=tablePath(path),row={id:x.id,data:data};
+   setLocal(path,data);
+   var r=await sbClient.from(x.table).upsert(row,{onConflict:'id'});
+   if(r.error){toast('Erro ao salvar no banco: '+r.error.message);throw r.error}
+  },
+  delete:async function(){
+   var x=tablePath(path);deleteLocal(path);
+   var r=await sbClient.from(x.table).delete().eq('id',x.id);
+   if(r.error){toast('Erro ao excluir: '+r.error.message);throw r.error}
+  }
+ }},
+ collection:function(name){return{doc:function(){return{id:Math.random().toString(36).slice(2,10)}}}}
+};
+function applyRemote(table,record,event){
+ var prefix=table==='calendar_config'?'config':table==='calendar_cards'?'cards':'state';
+ var path=prefix+'/'+record.id;
+ if(event==='DELETE')delete store[path];else store[path]=record.data;
+ sync();render();
+}
+async function bootstrap(){
+ try{
+  var names=['calendar_config','calendar_cards','calendar_states'];
+  var results=await Promise.all(names.map(function(n){return sbClient.from(n).select('id,data')}));
+  for(var i=0;i<results.length;i++){if(results[i].error)throw results[i].error}
+  store={};
+  results[0].data.forEach(function(r){store['config/'+r.id]=r.data});
+  results[1].data.forEach(function(r){store['cards/'+r.id]=r.data});
+  results[2].data.forEach(function(r){store['state/'+r.id]=r.data});
+  if(!store['config/main']){
+   var initial={people:[{id:'alana',name:'Alana',color:'#f59e9e'},{id:'laura',name:'Laura',color:'#8ecae6'},{id:'jaque',name:'Jaque',color:'#b8e0a0'}],acts:[{id:'a1',name:'Banners',pid:'alana',color:'#e63946',emoji:'🖼️'},{id:'a2',name:'Criativos de Anúncios',pid:'alana',color:'#f77f00',emoji:'🎯'},{id:'a3',name:'Repaginação',pid:'alana',color:'#7b2cbf',emoji:'✨'},{id:'a4',name:'Posts para Redes Sociais',pid:'alana',color:'#007f5f',emoji:'📱'},{id:'l1',name:'Pautas de Ações',pid:'laura',color:'#1d3557',emoji:'📝'},{id:'l2',name:'Programação de Posts',pid:'laura',color:'#d00070',emoji:'🗓️'},{id:'l3',name:'Emails Marketing',pid:'laura',color:'#6a4c93',emoji:'💌'},{id:'j1',name:'Aprovação de Pautas',pid:'jaque',color:'#0077b6',emoji:'👍'},{id:'j2',name:'Aprovação de Artes',pid:'jaque',color:'#b08900',emoji:'🎨'},{id:'j3',name:'Programação de Banners',pid:'jaque',color:'#3a3a3a',emoji:'⏰'}],clients:CL.slice(),days:[]};
+   var ins=await sbClient.from('calendar_config').upsert({id:'main',data:initial});
+   if(ins.error)throw ins.error;
+   store['config/main']=initial;
+  }
+  sync();loaded=true;note='';render();
+  names.forEach(function(table){
+   sbClient.channel('public-'+table).on('postgres_changes',{event:'*',schema:'public',table:table},function(payload){
+    applyRemote(table,payload.eventType==='DELETE'?payload.old:payload.new,payload.eventType);
+   }).subscribe();
+  });
+ }catch(e){console.error(e);note='Não foi possível conectar ao banco. Confira se executou o SQL de configuração no Supabase.';loaded=false;render()}
+}
 function bk(){var a=h('a',{href:URL.createObjectURL(new Blob([JSON.stringify(store)],{type:'application/json'})),download:'calendario-producoes-backup.json'});document.body.append(a);a.click();a.remove()}
-function rs(){var i=h('input',{type:'file',accept:'.json'});i.onchange=function(){var f=i.files[0];if(!f)return;f.text().then(function(x){try{var o=JSON.parse(x);if(!o||typeof o!='object')throw 0;store=o;persist();toast('Backup restaurado.')}catch(e){toast('Arquivo de backup inválido.')}})};i.click()}
-adm=true;loaded=true;sync();render();
+function rs(){var i=h('input',{type:'file',accept:'.json'});i.onchange=function(){var f=i.files[0];if(!f)return;f.text().then(async function(x){try{var o=JSON.parse(x);if(!o||typeof o!='object')throw 0;for(var p in o){if(p.indexOf('config/')===0||p.indexOf('cards/')===0||p.indexOf('state/')===0)await db.doc(p).set(o[p])}toast('Backup enviado ao banco.')}catch(e){toast('Não foi possível restaurar o backup.')}})};i.click()}
+adm=true;loaded=false;note='Conectando ao calendário compartilhado…';sync();render();bootstrap();
 })();
 </script></body></html>
